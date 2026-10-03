@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import random
 import sqlite3
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
@@ -11,8 +11,13 @@ class SyntheticConfig:
     seed: int = 42
 
 
-def create_synthetic_connection(config: SyntheticConfig = SyntheticConfig()) -> sqlite3.Connection:
+def create_synthetic_connection(
+    config: SyntheticConfig | None = None,
+) -> sqlite3.Connection:
     """Create a deterministic benchmark with intentionally specification-sensitive churn."""
+    if config is None:
+        config = SyntheticConfig()
+
     rng = random.Random(config.seed)
     connection = sqlite3.connect(":memory:")
     connection.execute(

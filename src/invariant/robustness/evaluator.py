@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from invariant.core.models import (
-    AnalysisResult,
     AnalysisSpecification,
     Claim,
     RobustnessReport,
