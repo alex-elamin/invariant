@@ -162,3 +162,14 @@ That layer should be evaluated separately from the deterministic runtime.
 See `docs/ROADMAP.md`. The next serious milestone is not “add more technologies”; it is to
 evaluate automatic choice discovery against a controlled benchmark and only then decide
 whether an LLM-assisted discovery layer earns its place.
+
+## Next: v0.4 — Effect Magnitude Robustness
+
+The next iteration will extend robustness evaluation beyond direction stability.
+
+Planned work:
+
+- Add magnitude stability alongside direction stability.
+- Detect conclusions whose direction remains stable while the effect size materially changes.
+- Quantify sensitivity by analytical dimension.
+- Investigate duplicate specification outputs observed in the synthetic benchmark.
