@@ -4,7 +4,9 @@ import argparse
 from pathlib import Path
 
 from invariant.benchmark.synthetic import SyntheticConfig, create_synthetic_connection
-from invariant.core.models import AnalysisSpecification, Claim, DecisionSpace
+from invariant.core.models import AnalysisSpecification, Claim
+from invariant.discovery.engine import ChoiceDiscovery
+from invariant.discovery.models import SemanticMetadata
 from invariant.execution.sqlite import SQLiteAnalysisExecutor
 from invariant.reporting.render import render_console, write_json
 from invariant.robustness.evaluator import RobustnessEvaluator
@@ -16,12 +18,16 @@ def run_demo(output: Path, customers: int) -> int:
     try:
         claim = Claim("Customers receiving discounts have lower churn.")
         original = AnalysisSpecification(churn_days=30, min_orders=1)
-        space = DecisionSpace(
-            churn_days=(30, 60, 90),
-            min_orders=(1, 2, 4),
-        )
 
-        variants = VariantGenerator(max_variants=64).generate(space)
+        discovery = ChoiceDiscovery().discover(
+            original,
+            SemanticMetadata(
+                inactivity_thresholds=(30, 60, 90),
+                minimum_order_populations=(1, 2, 4),
+            ),
+        )
+        variants = VariantGenerator(max_variants=64).generate(discovery.decision_space)
+
         executor = SQLiteAnalysisExecutor(connection, neutral_threshold=0.01)
         report = RobustnessEvaluator(executor).evaluate(claim, original, variants)
 

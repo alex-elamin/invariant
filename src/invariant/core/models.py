@@ -70,10 +70,26 @@ class AnalysisResult:
 
 
 @dataclass(frozen=True, slots=True)
+class MagnitudePolicy:
+    """Policy for deciding whether an effect remains materially comparable."""
+
+    minimum_effect: float = 0.01
+    retention_ratio: float = 0.50
+
+    def __post_init__(self) -> None:
+        if self.minimum_effect < 0:
+            raise ValueError("minimum_effect must be >= 0")
+        if not 0 < self.retention_ratio <= 1:
+            raise ValueError("retention_ratio must be in (0, 1]")
+
+
+@dataclass(frozen=True, slots=True)
 class SensitivityResult:
     dimension: str
     changed_variants: int
     disagreement_rate: float
+    magnitude_failure_rate: float | None = None
+    median_absolute_effect_delta: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,7 +99,20 @@ class RobustnessReport:
     results: tuple[AnalysisResult, ...]
     direction_stability: float
     direction_counts: dict[str, int]
+    magnitude_stability: float | None
+    magnitude_threshold: float | None
+    magnitude_policy: MagnitudePolicy
     sensitivity: tuple[SensitivityResult, ...]
+
+    @property
+    def assessment(self) -> str:
+        if self.original.direction == "neutral":
+            return "INDETERMINATE_BASELINE"
+        if self.direction_stability < 1.0:
+            return "DIRECTION_FRAGILE"
+        if self.magnitude_stability is not None and self.magnitude_stability < 1.0:
+            return "MAGNITUDE_FRAGILE"
+        return "ROBUST_WITHIN_TESTED_SPACE"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -93,6 +122,10 @@ class RobustnessReport:
                 "variants_executed": len(self.results),
                 "direction_stability": self.direction_stability,
                 "direction_counts": self.direction_counts,
+                "magnitude_stability": self.magnitude_stability,
+                "magnitude_threshold": self.magnitude_threshold,
+                "magnitude_policy": asdict(self.magnitude_policy),
+                "assessment": self.assessment,
             },
             "sensitivity": [asdict(item) for item in self.sensitivity],
             "results": [result.to_dict() for result in self.results],
